@@ -1,0 +1,135 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>“没钱赚”商店收银系统</title>
+
+    <script type="text/javascript" src="./jquery-3.4.1.min.js"></script>
+    <script src="https://code.jquery.com/jquery-1.12.4.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <style type="text/css">
+        p {
+            height: 30px;
+            font-family: Georgia, serif;
+            font-size: 25px;
+            color: #ffaf85;
+            text-align: right;
+        }
+
+
+
+        table {
+            margin: 0 auto;
+            border: 1px solid #ffaf85;
+        }
+
+        td {
+            text-align: right;
+            height: 50px;
+        }
+        th {
+            text-align: right;
+            height: 50px;
+        }
+
+        h4 {
+            text-align: center;
+            height: 50px;
+            color: black;
+            font-weight: bold;
+            font-size: 30px;
+        }
+
+        #sum {
+            color: #f91938;
+        }
+        table tr:nth-child(odd){
+            background: lightpink;
+        }
+        table tr:nth-child(even){
+            background: orange
+        }
+
+    </style>
+</head>
+<body>
+<p>“没钱赚”商店收银系统</p>
+<hr/>
+<br><br><br><br>
+<table class="table table-bordered" id="tabletest" border="1" cellspacing="0">
+    <tr>
+        <th width="200px" height="50px">商品名称</th>
+        <th width="100px">单位</th>
+        <th width="100px">单价</th>
+        <th width="150px">条码</th>
+        <th width="249px">是否使用买三赠一折扣</th>
+        <th width="200px">购买数量</th>
+    </tr>
+</table>
+<h4 id="result">总消费：<span id="sum"></span>元</h4>
+<script type="text/javascript">
+    $(function () {
+        $.ajax({
+            url: 'http://203.195.193.218:81/shop/getAllItems', type: 'get',
+            dataType: 'json', success: function (data) {
+                var count = [];
+                for (i in data.data) {
+                    var tr;
+                    count.push(0);
+                    var number = count[i]
+                    tr = '<td>' + data.data[i].itemName + '</td>'
+                        + '<td>' + data.data[i].unit + '</td>'
+                        + '<td>' + data.data[i].price + '</td>'
+                        + '<td>' + data.data[i].barCode + '</td>'
+                        + '<td>' + (Number(data.data[i].discount) == 0 ? '否' : '是')
+                        + '</td>' //减少代码，查看清楚
+                        + '<td><button onclick="add(this)">+</button><button onclick="decrease(this)">-</button>&nbsp;&nbsp;<span style="color:green;">' + number + '</span></td>'
+                    $('#tabletest').append('<tr>' + tr + '<tr>');
+                }
+            }
+        })
+    })
+</script>
+<script type="text/javascript">
+    var items = '';
+
+    function add(r) {
+        var number = $($(r.parentNode).children('span')).text();
+        number++;
+        $($(r.parentNode).children('span')).text(number);
+    }
+
+    function decrease(r) {
+        var number = $($(r.parentNode).children('span')).text();
+        number--;
+        $($(r.parentNode).children('span')).text(number);
+    }
+
+    $("#result").one('click',function () {
+        var table = document.getElementById('tabletest');
+
+        var rows = table.rows;
+        for (var i = 1; i < rows.length; i++) {
+            for (var j = 0; j < rows[i].cells.length; j++) {
+                if (j == 3 && $(rows[i].cells[5]).children('span').text() > 1) {
+                    items = items + 'itemBarCodes=' + rows[i].cells[j].innerHTML + '-' +
+                        $(rows[i].cells[5]).children('span').text() + '&';
+                }
+                if (j == 3 && $(rows[i].cells[5]).children('span').text() == 1) {
+                    items = items + 'itemBarCodes=' + rows[i].cells[j].innerHTML + '&';
+                }
+            }
+        }
+
+        items = items.slice(0, items.length - 1);
+        $.ajax({
+            url: 'http://203.195.193.218:81/shop/buyItems', type: 'post',
+            dataType: 'json', data: items,
+            success: function (data) {
+                var sum = document.getElementById('sum');
+                $(sum).text(data.data)
+            }
+        })
+    })
+</script>
+</body>
+</html>
